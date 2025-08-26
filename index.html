@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>DuckLink — Verify Code</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <main class="container">
+    <header class="header">
+      <div class="logo" aria-hidden="true"></div>
+      <h1>DuckLink — Verification</h1>
+      <p class="subtitle">Paste your DuckLink code to check if it's valid.</p>
+    </header>
+
+    <form id="checkForm" class="card" onsubmit="return false;">
+      <label for="code">Verification code</label>
+      <input id="code" name="code" inputmode="latin" autocomplete="off" maxlength="16" placeholder="e.g. R7GQ2Z" required />
+      <div class="controls">
+        <button id="checkBtn" type="button">Check Code</button>
+      </div>
+      <div id="result" class="result" aria-live="polite"></div>
+    </form>
+
+    <section class="info card">
+      <h2>How to link</h2>
+      <ol>
+        <li>In Discord post in the gate channel — DuckLink will DM you a code.</li>
+        <li>Go in-game and run <code>/verify &lt;code&gt;</code>.</li>
+        <li>This page can be used to inspect a code's status (valid / expired / used).</li>
+      </ol>
+      <p class="note">This page only checks codes. To redeem a code you must run the in-game command (the Skript will post the code to the server API).</p>
+    </section>
+
+    <footer class="footer">
+      <small>Hosted by cratex.xyz · DuckLink</small>
+    </footer>
+  </main>
+
+  <script>
+    // ========== CONFIG ==========
+    // Change this to your verification API base URL (no trailing slash), e.g.:
+    // const API_BASE = "https://verify.cratex.xyz";
+    const API_BASE = "https://verify.cratex.xyz";
+
+    // ========== UI ==========
+    const form = document.getElementById("checkForm");
+    const codeInput = document.getElementById("code");
+    const checkBtn = document.getElementById("checkBtn");
+    const result = document.getElementById("result");
+
+    function showMessage(html, kind="info") {
+      result.className = "result " + kind;
+      result.innerHTML = html;
+    }
+
+    async function checkCode() {
+      const raw = codeInput.value.trim().toUpperCase();
+      if (!raw) return showMessage("Please enter a code.", "error");
+      showMessage("Checking…", "loading");
+      try {
+        const res = await fetch(`${API_BASE}/check/${encodeURIComponent(raw)}`, {
+          method: "GET",
+          cache: "no-cache",
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          showMessage(`Server error (${res.status})`, "error");
+          return;
+        }
+        if (data.valid) {
+          const expires = new Date((data.expires_at || 0) * 1000);
+          showMessage(`
+            <strong>Valid code ✅</strong>
+            <div>Discord ID: <code>${data.discord_id}</code></div>
+            <div>Expires: <time datetime="${expires.toISOString()}">${expires.toLocaleString()}</time></div>
+          `, "success");
+        } else {
+          // reason: expired / not_found / used
+          let msg = "Invalid code";
+          if (data.reason === "expired") msg = "That code has expired ⏰";
+          else if (data.reason === "used") msg = "That code has already been used ✅";
+          else if (data.reason === "not_found") msg = "Code not found";
+          showMessage(`<strong>${msg}</strong>`, "error");
+        }
+      } catch (err) {
+        console.error(err);
+        showMessage("Network error — could not contact the verification server.", "error");
+      }
+    }
+
+    checkBtn.addEventListener("click", checkCode);
+    codeInput.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") checkCode();
+    });
+  </script>
+</body>
+</html>
