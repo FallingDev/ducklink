@@ -1,99 +1,56 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>DuckLink — Verify Code</title>
-  <link rel="stylesheet" href="styles.css" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Verification Code</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #111;
+      color: #eee;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+    }
+    .code-box {
+      font-size: 2em;
+      padding: 20px;
+      border: 2px solid #eee;
+      border-radius: 8px;
+      margin-top: 20px;
+      background: #222;
+    }
+    button {
+      margin-top: 20px;
+      padding: 10px 20px;
+      font-size: 1em;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      background: #4cafef;
+      color: black;
+    }
+  </style>
 </head>
 <body>
-  <main class="container">
-    <header class="header">
-      <div class="logo" aria-hidden="true"></div>
-      <h1>DuckLink — Verification</h1>
-      <p class="subtitle">Paste your DuckLink code to check if it's valid.</p>
-    </header>
-
-    <form id="checkForm" class="card" onsubmit="return false;">
-      <label for="code">Verification code</label>
-      <input id="code" name="code" inputmode="latin" autocomplete="off" maxlength="16" placeholder="e.g. R7GQ2Z" required />
-      <div class="controls">
-        <button id="checkBtn" type="button">Check Code</button>
-      </div>
-      <div id="result" class="result" aria-live="polite"></div>
-    </form>
-
-    <section class="info card">
-      <h2>How to link</h2>
-      <ol>
-        <li>In Discord post in the gate channel — DuckLink will DM you a code.</li>
-        <li>Go in-game and run <code>/verify &lt;code&gt;</code>.</li>
-        <li>This page can be used to inspect a code's status (valid / expired / used).</li>
-      </ol>
-      <p class="note">This page only checks codes. To redeem a code you must run the in-game command (the Skript will post the code to the server API).</p>
-    </section>
-
-    <footer class="footer">
-      <small>Hosted by cratex.xyz · DuckLink</small>
-    </footer>
-  </main>
+  <h1>Your Verification Code</h1>
+  <div id="code" class="code-box"></div>
+  <button onclick="generateCode()">Generate New Code</button>
 
   <script>
-    // ========== CONFIG ==========
-    // Change this to your verification API base URL (no trailing slash), e.g.:
-    // const API_BASE = "https://verify.cratex.xyz";
-    const API_BASE = "https://verify.cratex.xyz";
-
-    // ========== UI ==========
-    const form = document.getElementById("checkForm");
-    const codeInput = document.getElementById("code");
-    const checkBtn = document.getElementById("checkBtn");
-    const result = document.getElementById("result");
-
-    function showMessage(html, kind="info") {
-      result.className = "result " + kind;
-      result.innerHTML = html;
-    }
-
-    async function checkCode() {
-      const raw = codeInput.value.trim().toUpperCase();
-      if (!raw) return showMessage("Please enter a code.", "error");
-      showMessage("Checking…", "loading");
-      try {
-        const res = await fetch(`${API_BASE}/check/${encodeURIComponent(raw)}`, {
-          method: "GET",
-          cache: "no-cache",
-        });
-        const data = await res.json();
-        if (!res.ok) {
-          showMessage(`Server error (${res.status})`, "error");
-          return;
-        }
-        if (data.valid) {
-          const expires = new Date((data.expires_at || 0) * 1000);
-          showMessage(`
-            <strong>Valid code ✅</strong>
-            <div>Discord ID: <code>${data.discord_id}</code></div>
-            <div>Expires: <time datetime="${expires.toISOString()}">${expires.toLocaleString()}</time></div>
-          `, "success");
-        } else {
-          // reason: expired / not_found / used
-          let msg = "Invalid code";
-          if (data.reason === "expired") msg = "That code has expired ⏰";
-          else if (data.reason === "used") msg = "That code has already been used ✅";
-          else if (data.reason === "not_found") msg = "Code not found";
-          showMessage(`<strong>${msg}</strong>`, "error");
-        }
-      } catch (err) {
-        console.error(err);
-        showMessage("Network error — could not contact the verification server.", "error");
+    function generateCode() {
+      const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+      let code = "";
+      for (let i = 0; i < 5; i++) {
+        code += chars.charAt(Math.floor(Math.random() * chars.length));
       }
+      document.getElementById("code").innerText = code;
     }
-
-    checkBtn.addEventListener("click", checkCode);
-    codeInput.addEventListener("keydown", (e) => {
-      if (e.key === "Enter") checkCode();
-    });
+    // Generate a code on page load
+    generateCode();
   </script>
 </body>
 </html>
